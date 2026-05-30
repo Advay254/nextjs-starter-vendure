@@ -4,6 +4,7 @@ import {hasLocale, NextIntlClientProvider} from "next-intl";
 import {Geist, Geist_Mono} from "next/font/google";
 import {getMessages, getTranslations, setRequestLocale} from "next-intl/server";
 import {notFound} from "next/navigation";
+import {Suspense} from "react";
 import {routing} from "@/i18n/routing";
 import {toOgLocale} from "@/i18n/locale-utils";
 import {getRouteLocale} from "@/i18n/server";
@@ -11,6 +12,7 @@ import {Toaster} from "@/components/ui/sonner";
 import {Navbar} from "@/components/layout/navbar";
 import {Footer} from "@/components/layout/footer";
 import {ThemeProvider} from "@/components/providers/theme-provider";
+import {MobileBottomNavWrapper} from "@/components/layout/mobile-bottom-nav-wrapper";
 import {SITE_NAME, SITE_URL} from "@/lib/metadata";
 import "./globals.css";
 
@@ -31,7 +33,7 @@ export function generateStaticParams() {
 export async function generateMetadata(): Promise<Metadata> {
     const locale = await getRouteLocale();
     const ogLocale = toOgLocale(locale);
-    const t = await getTranslations({locale, namespace: 'Common'});
+    const t = await getTranslations({locale, namespace: "Common"});
 
     return {
         metadataBase: new URL(SITE_URL),
@@ -39,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
             default: SITE_NAME,
             template: `%s | ${SITE_NAME}`,
         },
-        description: t('siteDescription', {siteName: SITE_NAME}),
+        description: t("siteDescription", {siteName: SITE_NAME}),
         openGraph: {
             type: "website",
             siteName: SITE_NAME,
@@ -95,9 +97,24 @@ export default async function LocaleLayout({children}: {children: React.ReactNod
                 <NextIntlClientProvider locale={locale} messages={messages}>
                     <ThemeProvider>
                         <Navbar />
-                        {children}
-                        <Footer/>
-                        <Toaster/>
+
+                        {/*
+                         * pb-14 reserves 56 px at the bottom on mobile so the
+                         * fixed MobileBottomNav never obscures page content.
+                         * md:pb-0 removes that padding on desktop where the bar
+                         * is hidden (md:hidden in MobileBottomNav).
+                         */}
+                        <main className="flex-1 pb-14 md:pb-0">
+                            {children}
+                        </main>
+
+                        <Footer />
+                        <Toaster />
+
+                        {/* Mobile bottom navigation — hidden on md+ via its own md:hidden */}
+                        <Suspense>
+                            <MobileBottomNavWrapper />
+                        </Suspense>
                     </ThemeProvider>
                 </NextIntlClientProvider>
             </body>
