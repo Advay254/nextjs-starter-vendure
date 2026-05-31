@@ -44,7 +44,15 @@ export function MobileNav({collections}: MobileNavProps) {
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden" />}>
+            <SheetTrigger
+                render={
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="md:hidden text-slate-800 hover:text-orange-500 hover:bg-orange-50"
+                    />
+                }
+            >
                 <Menu className="size-5" />
                 <span className="sr-only">{t('openMenu')}</span>
             </SheetTrigger>
