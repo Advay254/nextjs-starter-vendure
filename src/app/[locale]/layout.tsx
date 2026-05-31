@@ -99,19 +99,19 @@ export default async function LocaleLayout({children}: {children: React.ReactNod
                         <Navbar />
 
                         {/*
-                         * pb-14 reserves 56 px at the bottom on mobile so the
-                         * fixed MobileBottomNav never obscures page content.
-                         * md:pb-0 removes that padding on desktop where the bar
-                         * is hidden (md:hidden in MobileBottomNav).
+                         * pt-14   = 56px on mobile  (h-14 navbar only — no promo strip on mobile)
+                         * md:pt-[90px] = 56px navbar + ~34px promo strip on desktop
+                         * pb-14   = 56px on mobile to clear the fixed bottom nav
+                         * md:pb-0 = no bottom padding needed on desktop
                          */}
-                        <main className="flex-1 pb-14 md:pb-0">
+                        <main className="flex-1 pt-14 md:pt-[90px] pb-14 md:pb-0">
                             {children}
                         </main>
 
                         <Footer />
                         <Toaster />
 
-                        {/* Mobile bottom navigation — hidden on md+ via its own md:hidden */}
+                        {/* Fixed mobile bottom nav — md:hidden inside the component */}
                         <Suspense>
                             <MobileBottomNavWrapper />
                         </Suspense>
