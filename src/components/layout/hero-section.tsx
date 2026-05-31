@@ -1,43 +1,57 @@
-import {Button} from "@/components/ui/button";
-import { Link } from '@/i18n/navigation';
-import {getTranslations} from 'next-intl/server';
-import {getRouteLocale} from '@/i18n/server';
+import { getTranslations } from 'next-intl/server';
+import { getRouteLocale } from '@/i18n/server';
+import { HeroCarousel, HeroSlide } from '@/components/layout/hero-carousel';
+
+/**
+ * Slide definitions live here so they can be swapped for CMS data later.
+ * Gradients use only Tailwind classes — no external images required.
+ * When real product images are available, add a `bgImage` field and
+ * render it as an absolutely-positioned <Image fill> behind the gradient.
+ */
+const SLIDES: Omit<HeroSlide, 'cta' | 'ctaHref'>[] = [
+    {
+        id: 'slide-flash',
+        headline: 'Flash Sale — Up to 60% Off',
+        sub: 'Unbeatable prices on electronics, fashion, and home essentials. Today only.',
+        secondaryCta: 'View All Deals',
+        secondaryHref: '/search',
+        gradient: 'bg-gradient-to-br from-orange-600 via-orange-500 to-amber-400',
+        accentColor: 'bg-slate-900 hover:bg-slate-800',
+    },
+    {
+        id: 'slide-new',
+        headline: 'New Season Arrivals',
+        sub: 'Fresh styles landing every week. Be the first to shop the latest trends.',
+        secondaryCta: 'Explore Now',
+        secondaryHref: '/search',
+        gradient: 'bg-gradient-to-br from-slate-800 via-slate-700 to-slate-600',
+        accentColor: 'bg-orange-500 hover:bg-orange-600',
+    },
+    {
+        id: 'slide-delivery',
+        headline: 'Free Delivery Nationwide',
+        sub: 'Orders over KES 5,000 ship free to your door — fast, tracked, and insured.',
+        secondaryCta: 'See How It Works',
+        secondaryHref: '/search',
+        gradient: 'bg-gradient-to-br from-emerald-700 via-teal-600 to-cyan-600',
+        accentColor: 'bg-orange-500 hover:bg-orange-600',
+    },
+];
 
 export async function HeroSection() {
     const locale = await getRouteLocale();
-    const t = await getTranslations({locale, namespace: 'Hero'});
-    return (
-        <section className="relative overflow-hidden bg-gradient-to-br from-background via-muted/50 to-muted">
-            {/* Subtle decorative grid pattern */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:4rem_4rem] opacity-30" />
-            {/* Radial fade overlay */}
-            <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,var(--color-primary)/8,transparent)]" />
+    const t = await getTranslations({ locale, namespace: 'Hero' });
 
-            <div className="container relative mx-auto px-4 py-28 md:py-40 lg:py-48">
-                <div className="max-w-4xl mx-auto text-center space-y-8">
-                    <h1
-                        className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight animate-in fade-in slide-in-from-top-4 duration-700 fill-mode-backwards"
-                    >
-                        {t('title')}{" "}
-                        <span className="text-primary">{t('titleHighlight')}</span>
-                    </h1>
-                    <p
-                        className="text-lg md:text-xl lg:text-2xl text-muted-foreground max-w-2xl mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150 fill-mode-backwards"
-                    >
-                        {t('subtitle')}
-                    </p>
-                    <div
-                        className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300 fill-mode-backwards"
-                    >
-                        <Button render={<Link href="/search" />} nativeButton={false} size="lg" className="min-w-[200px] text-base">
-                            {t('shopNow')}
-                        </Button>
-                        <Button render={<Link href="/search" />} nativeButton={false} variant="outline" size="lg" className="min-w-[200px] text-base">
-                            {t('viewCollections')}
-                        </Button>
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
+    /**
+     * First slide headline + CTA use the existing Hero translation keys
+     * so nothing in en.json needs to change.
+     */
+    const slides: HeroSlide[] = SLIDES.map((s, i) => ({
+        ...s,
+        headline: i === 0 ? t('title') + ' — Up to 60% Off' : s.headline,
+        cta: t('shopNow'),
+        ctaHref: '/search',
+    }));
+
+    return <HeroCarousel slides={slides} autoPlayMs={5000} />;
 }
