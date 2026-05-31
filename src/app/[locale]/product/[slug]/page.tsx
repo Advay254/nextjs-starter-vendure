@@ -29,22 +29,22 @@ import {
     buildCanonicalUrl,
     buildOgImages,
 } from '@/lib/metadata';
-import {getTranslations} from 'next-intl/server';
-import {toOgLocale} from '@/i18n/locale-utils';
-import {getActiveCurrencyCode} from '@/lib/currency-server';
-import {getRouteLocale} from '@/i18n/server';
+import { getTranslations } from 'next-intl/server';
+import { toOgLocale } from '@/i18n/locale-utils';
+import { getActiveCurrencyCode } from '@/lib/currency-server';
+import { getRouteLocale } from '@/i18n/server';
 
+/* ─── Data fetching — UNCHANGED ───────────────────────────────────── */
 async function getProductData(slug: string, currencyCode: string) {
     'use cache';
     cacheLife('hours');
-
     const locale = await getRouteLocale();
     cacheTag(`product-${slug}-${locale}-${currencyCode}`);
     cacheTag('products');
-
-    return await query(GetProductDetailQuery, {slug}, {languageCode: locale, currencyCode});
+    return await query(GetProductDetailQuery, { slug }, { languageCode: locale, currencyCode });
 }
 
+/* ─── generateMetadata — UNCHANGED ────────────────────────────────── */
 export async function generateMetadata({
     params,
 }: PageProps<'/[locale]/product/[slug]'>): Promise<Metadata> {
@@ -53,17 +53,12 @@ export async function generateMetadata({
     const currencyCode = await getActiveCurrencyCode();
     const result = await getProductData(slug, currencyCode);
     const product = result.data.product;
+    const t = await getTranslations({ locale, namespace: 'Product' });
 
-    const t = await getTranslations({locale, namespace: 'Product'});
-
-    if (!product) {
-        return {
-            title: t('notFound'),
-        };
-    }
+    if (!product) return { title: t('notFound') };
 
     const description = truncateDescription(product.description);
-    const fallbackDescription = t('shopProductAt', {name: product.name, siteName: SITE_NAME});
+    const fallbackDescription = t('shopProductAt', { name: product.name, siteName: SITE_NAME });
     const ogImage = product.assets?.[0]?.preview;
     const ogLocale = toOgLocale(locale);
     const productPath = `/product/${product.slug}`;
@@ -94,120 +89,134 @@ export async function generateMetadata({
     };
 }
 
-export default async function ProductDetailPage({params, searchParams}: PageProps<'/[locale]/product/[slug]'>) {
+/* ─── Page ─────────────────────────────────────────────────────────── */
+export default async function ProductDetailPage({
+    params,
+    searchParams,
+}: PageProps<'/[locale]/product/[slug]'>) {
     const { slug } = await params;
     const searchParamsResolved = await searchParams;
     const locale = await getRouteLocale();
     const currencyCode = await getActiveCurrencyCode();
-    const t = await getTranslations({locale, namespace: 'Product'});
+    const t = await getTranslations({ locale, namespace: 'Product' });
 
     const result = await getProductData(slug, currencyCode);
-
     const product = result.data.product;
 
-    if (!product) {
-        notFound();
-    }
+    if (!product) notFound();
 
-    // Get the primary collection (prefer deepest nested / most specific)
-    const primaryCollection = product.collections?.find(c => c.parent?.id) ?? product.collections?.[0];
+    const primaryCollection =
+        product.collections?.find((c) => c.parent?.id) ?? product.collections?.[0];
+
+    const TRUST_BADGES = [
+        { icon: Truck,       label: t('trustBadges.fastShipping')  },
+        { icon: RotateCcw,   label: t('trustBadges.freeReturns')   },
+        { icon: ShieldCheck, label: t('trustBadges.secureCheckout') },
+        { icon: Clock,       label: t('trustBadges.guarantee')      },
+    ] as const;
 
     return (
         <>
-            <div className="container mx-auto px-4 py-8 mt-16">
-                {/* Breadcrumb Navigation */}
-                <Breadcrumb className="mb-6">
-                    <BreadcrumbList>
+            {/* ── Main product section ── */}
+            <div className="max-w-screen-xl mx-auto px-3 sm:px-5 py-5 md:py-8">
+
+                {/* Breadcrumb */}
+                <Breadcrumb className="mb-5">
+                    <BreadcrumbList className="text-xs">
                         <BreadcrumbItem>
-                            <BreadcrumbLink render={<Link href="/" />}>{t('home')}</BreadcrumbLink>
+                            <BreadcrumbLink render={<Link href="/" />} className="text-slate-400 hover:text-orange-500 transition-colors">
+                                {t('home')}
+                            </BreadcrumbLink>
                         </BreadcrumbItem>
                         {primaryCollection && (
                             <>
-                                <BreadcrumbSeparator />
+                                <BreadcrumbSeparator className="text-slate-300" />
                                 <BreadcrumbItem>
-                                    <BreadcrumbLink render={<Link href={`/collection/${primaryCollection.slug}`} />}>
+                                    <BreadcrumbLink
+                                        render={<Link href={`/collection/${primaryCollection.slug}`} />}
+                                        className="text-slate-400 hover:text-orange-500 transition-colors"
+                                    >
                                         {primaryCollection.name}
                                     </BreadcrumbLink>
                                 </BreadcrumbItem>
                             </>
                         )}
-                        <BreadcrumbSeparator />
+                        <BreadcrumbSeparator className="text-slate-300" />
                         <BreadcrumbItem>
-                            <BreadcrumbPage>{product.name}</BreadcrumbPage>
+                            <BreadcrumbPage className="text-slate-600 font-medium line-clamp-1">
+                                {product.name}
+                            </BreadcrumbPage>
                         </BreadcrumbItem>
                     </BreadcrumbList>
                 </Breadcrumb>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-                    {/* Left Column: Image Carousel */}
-                    <div className="lg:sticky lg:top-20 lg:self-start">
+                {/* Two-column layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12">
+                    {/* Image carousel */}
+                    <div className="lg:sticky lg:top-[94px] lg:self-start">
                         <ProductImageCarousel images={product.assets} />
                     </div>
 
-                    {/* Right Column: Product Info */}
+                    {/* Product info */}
                     <div>
-                        <ProductInfo product={product} searchParams={searchParamsResolved} currencyCode={currencyCode} />
+                        <ProductInfo
+                            product={product}
+                            searchParams={searchParamsResolved}
+                            currencyCode={currencyCode}
+                        />
                     </div>
                 </div>
             </div>
 
-            {/* Shipping & Trust Badges */}
-            <section className="py-8 mt-8 border-y border-border/50">
-                <div className="container mx-auto px-4">
-                    <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8">
-                        <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm font-medium text-muted-foreground">
-                            <Truck className="h-4 w-4 text-primary" />
-                            {t('trustBadges.fastShipping')}
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm font-medium text-muted-foreground">
-                            <RotateCcw className="h-4 w-4 text-primary" />
-                            {t('trustBadges.freeReturns')}
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm font-medium text-muted-foreground">
-                            <ShieldCheck className="h-4 w-4 text-primary" />
-                            {t('trustBadges.secureCheckout')}
-                        </div>
-                        <div className="inline-flex items-center gap-2 rounded-full bg-muted/60 px-4 py-2 text-sm font-medium text-muted-foreground">
-                            <Clock className="h-4 w-4 text-primary" />
-                            {t('trustBadges.guarantee')}
-                        </div>
+            {/* ── Trust badge strip ── */}
+            <section className="border-y border-slate-100 bg-slate-50 py-5">
+                <div className="max-w-screen-xl mx-auto px-4 sm:px-5">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {TRUST_BADGES.map(({ icon: Icon, label }) => (
+                            <div
+                                key={label}
+                                className="flex items-center gap-2.5 bg-white rounded-xl border border-slate-100 px-4 py-3 shadow-sm"
+                            >
+                                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-orange-50 shrink-0">
+                                    <Icon className="h-4.5 w-4.5 text-orange-500" aria-hidden="true" />
+                                </div>
+                                <span className="text-xs font-semibold text-slate-600 leading-tight">
+                                    {label}
+                                </span>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>
 
-            {/* Store FAQ Section */}
-            <section className="py-16 bg-muted/30">
-                <div className="container mx-auto px-4 max-w-2xl">
-                    <h2 className="text-2xl font-bold text-center mb-8">{t('faq.title')}</h2>
-                    <Accordion className="w-full">
-                        <AccordionItem value="shipping">
-                            <AccordionTrigger>{t('faq.shipping.question')}</AccordionTrigger>
-                            <AccordionContent>
-                                {t('faq.shipping.answer')}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="returns">
-                            <AccordionTrigger>{t('faq.returns.question')}</AccordionTrigger>
-                            <AccordionContent>
-                                {t('faq.returns.answer')}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="tracking">
-                            <AccordionTrigger>{t('faq.tracking.question')}</AccordionTrigger>
-                            <AccordionContent>
-                                {t('faq.tracking.answer')}
-                            </AccordionContent>
-                        </AccordionItem>
-                        <AccordionItem value="international">
-                            <AccordionTrigger>{t('faq.international.question')}</AccordionTrigger>
-                            <AccordionContent>
-                                {t('faq.international.answer')}
-                            </AccordionContent>
-                        </AccordionItem>
+            {/* ── FAQ accordion ── */}
+            <section className="py-10 md:py-14 bg-white">
+                <div className="max-w-screen-xl mx-auto px-4 sm:px-5 max-w-2xl">
+                    <div className="text-center mb-7">
+                        <h2 className="text-xl font-bold text-slate-800">{t('faq.title')}</h2>
+                        <div className="mx-auto mt-2 h-1 w-10 rounded-full bg-orange-500" />
+                    </div>
+                    <Accordion className="w-full divide-y divide-slate-100 border border-slate-100 rounded-2xl overflow-hidden">
+                        {[
+                            { value: 'shipping',      q: t('faq.shipping.question'),      a: t('faq.shipping.answer')      },
+                            { value: 'returns',       q: t('faq.returns.question'),       a: t('faq.returns.answer')       },
+                            { value: 'tracking',      q: t('faq.tracking.question'),      a: t('faq.tracking.answer')      },
+                            { value: 'international', q: t('faq.international.question'), a: t('faq.international.answer') },
+                        ].map((item) => (
+                            <AccordionItem key={item.value} value={item.value} className="bg-white px-5">
+                                <AccordionTrigger className="text-sm font-semibold text-slate-700 hover:text-orange-500 py-4">
+                                    {item.q}
+                                </AccordionTrigger>
+                                <AccordionContent className="text-sm text-slate-500 leading-relaxed pb-4">
+                                    {item.a}
+                                </AccordionContent>
+                            </AccordionItem>
+                        ))}
                     </Accordion>
                 </div>
             </section>
 
+            {/* ── Related products ── */}
             {primaryCollection && (
                 <RelatedProducts
                     collectionSlug={primaryCollection.slug}
