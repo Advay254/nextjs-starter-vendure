@@ -5,46 +5,49 @@ import { Home, Search, ShoppingCart, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MobileBottomNavProps {
-    /** Live cart item count — passed down from MobileBottomNavWrapper */
     cartItemCount?: number;
 }
 
-const NAV_TABS = [
+interface NavTab {
+    href: string;
+    label: string;
+    Icon: React.ElementType;
+    match: (p: string) => boolean;
+    badge?: boolean;
+}
+
+const NAV_TABS: NavTab[] = [
     {
         href: "/",
         label: "Home",
         Icon: Home,
-        match: (p: string) => p === "/",
+        match: (p) => p === "/",
     },
     {
         href: "/search",
         label: "Search",
         Icon: Search,
-        match: (p: string) => p.startsWith("/search"),
+        match: (p) => p.startsWith("/search"),
     },
     {
         href: "/cart",
         label: "Cart",
         Icon: ShoppingCart,
-        match: (p: string) => p.startsWith("/cart"),
+        match: (p) => p.startsWith("/cart"),
         badge: true,
     },
     {
         href: "/account/profile",
         label: "Account",
         Icon: User,
-        match: (p: string) =>
+        match: (p) =>
             p.startsWith("/account") ||
             p.startsWith("/sign-in") ||
             p.startsWith("/register"),
     },
-] as const;
+];
 
 export function MobileBottomNav({ cartItemCount = 0 }: MobileBottomNavProps) {
-    /**
-     * next-intl's usePathname strips the locale prefix automatically,
-     * so "/en/cart" is returned as "/cart" — no manual stripping needed.
-     */
     const pathname = usePathname();
 
     return (
@@ -54,14 +57,14 @@ export function MobileBottomNav({ cartItemCount = 0 }: MobileBottomNavProps) {
             aria-label="Mobile navigation"
         >
             <div className="flex items-stretch h-[56px]">
-                {NAV_TABS.map(({ href, label, Icon, match, badge }) => {
-                    const isActive = match(pathname);
-                    const showBadge = badge && cartItemCount > 0;
+                {NAV_TABS.map((tab) => {
+                    const isActive = tab.match(pathname);
+                    const showBadge = tab.badge && cartItemCount > 0;
 
                     return (
                         <Link
-                            key={href}
-                            href={href}
+                            key={tab.href}
+                            href={tab.href}
                             aria-current={isActive ? "page" : undefined}
                             className={cn(
                                 "relative flex-1 flex flex-col items-center justify-center gap-[3px]",
@@ -72,7 +75,6 @@ export function MobileBottomNav({ cartItemCount = 0 }: MobileBottomNavProps) {
                                     : "text-slate-400 hover:text-slate-500"
                             )}
                         >
-                            {/* Active top-edge indicator */}
                             {isActive && (
                                 <span
                                     aria-hidden="true"
@@ -80,9 +82,8 @@ export function MobileBottomNav({ cartItemCount = 0 }: MobileBottomNavProps) {
                                 />
                             )}
 
-                            {/* Icon + optional cart badge */}
                             <div className="relative mt-0.5">
-                                <Icon
+                                <tab.Icon
                                     aria-hidden="true"
                                     className={cn(
                                         "h-[21px] w-[21px] transition-transform duration-150",
@@ -101,14 +102,13 @@ export function MobileBottomNav({ cartItemCount = 0 }: MobileBottomNavProps) {
                                 )}
                             </div>
 
-                            {/* Label */}
                             <span
                                 className={cn(
                                     "text-[10px] font-semibold leading-none tracking-wide",
                                     isActive ? "text-orange-500" : "text-slate-400"
                                 )}
                             >
-                                {label}
+                                {tab.label}
                             </span>
                         </Link>
                     );
