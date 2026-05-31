@@ -1,10 +1,10 @@
 import Image from 'next/image';
 import { Link } from '@/i18n/navigation';
-import {Button} from '@/components/ui/button';
-import {Minus, Plus, X} from 'lucide-react';
-import {Price} from '@/components/commerce/price';
-import {removeFromCart, adjustQuantity} from './actions';
-import {getTranslations} from 'next-intl/server';
+import { Button } from '@/components/ui/button';
+import { Minus, Plus, X, ShoppingBag } from 'lucide-react';
+import { Price } from '@/components/commerce/price';
+import { removeFromCart, adjustQuantity } from './actions';
+import { getTranslations } from 'next-intl/server';
 
 type ActiveOrder = {
     id: string;
@@ -21,73 +21,90 @@ type ActiveOrder = {
             product: {
                 name: string;
                 slug: string;
-                featuredAsset?: {
-                    preview: string;
-                } | null;
+                featuredAsset?: { preview: string } | null;
             };
         };
     }>;
 };
 
-export async function CartItems({activeOrder}: { activeOrder: ActiveOrder | null }) {
+export async function CartItems({ activeOrder }: { activeOrder: ActiveOrder | null }) {
     const t = await getTranslations('Cart');
+
+    /* ── Empty state ── */
     if (!activeOrder || activeOrder.lines.length === 0) {
         return (
-            <div className="container mx-auto px-4 py-16">
-                <div className="text-center">
-                    <h1 className="text-3xl font-bold mb-4">{t('empty')}</h1>
-                    <p className="text-muted-foreground mb-8">
-                        {t('emptyMessage')}
-                    </p>
-                    <Button render={<Link href="/" />} nativeButton={false}>{t('continueShopping')}</Button>
+            <div className="flex flex-col items-center justify-center py-20 gap-4 text-center bg-white rounded-2xl border border-slate-100 shadow-sm">
+                <div className="flex items-center justify-center w-16 h-16 rounded-full bg-orange-50">
+                    <ShoppingBag className="h-8 w-8 text-orange-400" aria-hidden="true" />
                 </div>
+                <div className="space-y-1">
+                    <h2 className="text-lg font-bold text-slate-700">{t('empty')}</h2>
+                    <p className="text-sm text-slate-400">{t('emptyMessage')}</p>
+                </div>
+                <Button
+                    render={<Link href="/" />}
+                    nativeButton={false}
+                    className="mt-2 bg-orange-500 hover:bg-orange-600 text-white rounded-full px-8 font-semibold shadow-md shadow-orange-100"
+                >
+                    {t('continueShopping')}
+                </Button>
             </div>
         );
     }
 
     return (
-        <div className="lg:col-span-2 divide-y divide-border">
+        <div className="lg:col-span-2 space-y-3">
             {activeOrder.lines.map((line) => (
                 <div
                     key={line.id}
-                    className="flex flex-col sm:flex-row gap-4 p-4 first:rounded-t-xl last:rounded-b-xl border-x first:border-t last:border-b bg-card transition-colors duration-200 hover:bg-muted/30"
+                    className="flex gap-3 sm:gap-4 bg-white rounded-2xl border border-slate-100 p-3 sm:p-4 shadow-sm hover:shadow-md transition-shadow duration-200"
                 >
-                    {line.productVariant.product.featuredAsset && (
+                    {/* Thumbnail */}
+                    {line.productVariant.product.featuredAsset ? (
                         <Link
                             href={`/product/${line.productVariant.product.slug}`}
-                            className="flex-shrink-0"
+                            className="shrink-0"
                         >
-                            <Image
-                                src={line.productVariant.product.featuredAsset.preview}
-                                alt={line.productVariant.name}
-                                width={120}
-                                height={120}
-                                className="rounded-xl object-cover w-full sm:w-[120px] h-[120px]"
-                            />
+                            <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-100">
+                                <Image
+                                    src={line.productVariant.product.featuredAsset.preview}
+                                    alt={line.productVariant.name}
+                                    fill
+                                    className="object-cover hover:scale-105 transition-transform duration-300"
+                                    sizes="96px"
+                                />
+                            </div>
                         </Link>
+                    ) : (
+                        <div className="shrink-0 w-20 h-20 sm:w-24 sm:h-24 rounded-xl bg-slate-100 flex items-center justify-center">
+                            <ShoppingBag className="h-8 w-8 text-slate-300" aria-hidden="true" />
+                        </div>
                     )}
 
-                    <div className="flex-grow min-w-0">
+                    {/* Info */}
+                    <div className="flex-1 min-w-0 flex flex-col gap-1">
                         <Link
                             href={`/product/${line.productVariant.product.slug}`}
-                            className="font-semibold hover:underline block"
+                            className="text-sm font-semibold text-slate-800 hover:text-orange-500 transition-colors line-clamp-2 leading-snug"
                         >
                             {line.productVariant.product.name}
                         </Link>
+
                         {line.productVariant.name !== line.productVariant.product.name && (
-                            <p className="text-sm text-muted-foreground mt-1">
-                                {line.productVariant.name}
-                            </p>
+                            <p className="text-xs text-slate-400">{line.productVariant.name}</p>
                         )}
-                        <p className="text-sm text-muted-foreground mt-1">
-                            {t('sku', {sku: line.productVariant.sku})}
-                        </p>
-                        <p className="text-sm text-muted-foreground mt-2 sm:hidden">
-                            <Price value={line.unitPriceWithTax} currencyCode={activeOrder.currencyCode}/> {t('each')}
+
+                        <p className="text-xs text-slate-400">{t('sku', { sku: line.productVariant.sku })}</p>
+
+                        {/* Unit price (mobile) */}
+                        <p className="text-xs text-slate-400 sm:hidden mt-0.5">
+                            <Price value={line.unitPriceWithTax} currencyCode={activeOrder.currencyCode} />{' '}
+                            {t('each')}
                         </p>
 
-                        <div className="flex items-center gap-3 mt-4">
-                            <div className="flex items-center gap-1 border rounded-full bg-muted/50">
+                        {/* Stepper + delete */}
+                        <div className="flex items-center gap-2 mt-auto pt-1">
+                            <div className="flex items-center border-2 border-slate-200 rounded-full overflow-hidden">
                                 <form
                                     action={async () => {
                                         'use server';
@@ -98,15 +115,15 @@ export async function CartItems({activeOrder}: { activeOrder: ActiveOrder | null
                                         type="submit"
                                         variant="ghost"
                                         size="icon"
-                                        className="h-9 w-9 rounded-full transition-all duration-200 hover:bg-background"
+                                        className="h-8 w-8 rounded-full text-slate-500 hover:text-orange-500 hover:bg-orange-50 transition-colors"
                                         disabled={line.quantity <= 1}
                                     >
-                                        <Minus className="h-4 w-4"/>
+                                        <Minus className="h-3.5 w-3.5" aria-hidden="true" />
                                     </Button>
                                 </form>
-
-                                <span className="w-10 text-center font-semibold tabular-nums transition-all duration-200">{line.quantity}</span>
-
+                                <span className="w-8 text-center text-sm font-bold tabular-nums text-slate-800">
+                                    {line.quantity}
+                                </span>
                                 <form
                                     action={async () => {
                                         'use server';
@@ -117,9 +134,9 @@ export async function CartItems({activeOrder}: { activeOrder: ActiveOrder | null
                                         type="submit"
                                         variant="ghost"
                                         size="icon"
-                                        className="h-9 w-9 rounded-full transition-all duration-200 hover:bg-background"
+                                        className="h-8 w-8 rounded-full text-slate-500 hover:text-orange-500 hover:bg-orange-50 transition-colors"
                                     >
-                                        <Plus className="h-4 w-4"/>
+                                        <Plus className="h-3.5 w-3.5" aria-hidden="true" />
                                     </Button>
                                 </form>
                             </div>
@@ -134,27 +151,30 @@ export async function CartItems({activeOrder}: { activeOrder: ActiveOrder | null
                                     type="submit"
                                     variant="ghost"
                                     size="icon"
-                                    className="h-9 w-9 rounded-full text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors duration-200"
+                                    className="h-8 w-8 rounded-full text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+                                    aria-label="Remove item"
                                 >
-                                    <X className="h-5 w-5"/>
+                                    <X className="h-4 w-4" aria-hidden="true" />
                                 </Button>
                             </form>
-
-                            <div className="sm:hidden ml-auto">
-                                <p className="font-semibold text-lg">
-                                    <Price value={line.linePriceWithTax}
-                                           currencyCode={activeOrder.currencyCode}/>
-                                </p>
-                            </div>
                         </div>
                     </div>
 
-                    <div className="hidden sm:block text-right flex-shrink-0">
-                        <p className="font-semibold text-lg">
-                            <Price value={line.linePriceWithTax} currencyCode={activeOrder.currencyCode}/>
+                    {/* Line price (desktop) */}
+                    <div className="hidden sm:flex flex-col items-end justify-between shrink-0">
+                        <p className="font-bold text-base text-slate-800">
+                            <Price value={line.linePriceWithTax} currencyCode={activeOrder.currencyCode} />
                         </p>
-                        <p className="text-sm text-muted-foreground mt-1">
-                            <Price value={line.unitPriceWithTax} currencyCode={activeOrder.currencyCode}/> {t('each')}
+                        <p className="text-xs text-slate-400">
+                            <Price value={line.unitPriceWithTax} currencyCode={activeOrder.currencyCode} />{' '}
+                            {t('each')}
+                        </p>
+                    </div>
+
+                    {/* Line price (mobile — bottom right) */}
+                    <div className="sm:hidden flex items-end shrink-0">
+                        <p className="font-bold text-sm text-orange-500">
+                            <Price value={line.linePriceWithTax} currencyCode={activeOrder.currencyCode} />
                         </p>
                     </div>
                 </div>
