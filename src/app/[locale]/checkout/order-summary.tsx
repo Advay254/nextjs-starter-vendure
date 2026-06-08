@@ -1,149 +1,113 @@
 'use client';
 
-import { useState } from 'react';
 import Image from 'next/image';
-import { ChevronDown, ShoppingBag } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { Separator } from '@/components/ui/separator';
-import { OrderLine } from './types';
-import { useCheckout } from './checkout-provider';
-import { Price } from '@/components/commerce/price';
+import {ShoppingBag, Tag} from 'lucide-react';
+import {Price} from '@/components/commerce/price';
+import {useCheckout} from './checkout-provider';
 import {useTranslations} from 'next-intl';
 
-function OrderSummaryContent({ order, t }: { order: ReturnType<typeof useCheckout>['order']; t: ReturnType<typeof useTranslations<'Checkout'>> }) {
-  return (
-    <div className="space-y-4">
-      <div className="space-y-3">
-        {order.lines.map((line: OrderLine) => (
-          <div key={line.id} className="flex gap-3">
-            {line.productVariant.product.featuredAsset ? (
-              <div className="flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-muted">
-                <Image
-                  src={line.productVariant.product.featuredAsset.preview}
-                  alt={line.productVariant.name}
-                  width={56}
-                  height={56}
-                  className="object-cover w-full h-full"
-                />
-              </div>
-            ) : (
-              <div className="flex-shrink-0 w-14 h-14 rounded-lg bg-muted flex items-center justify-center">
-                <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-              </div>
-            )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium line-clamp-2">
-                {line.productVariant.product.name}
-              </p>
-              {line.productVariant.name !== line.productVariant.product.name && (
-                <p className="text-xs text-muted-foreground">
-                  {line.productVariant.name}
-                </p>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {t('qty', {quantity: line.quantity})}
-              </p>
-            </div>
-            <div className="text-sm font-medium">
-              <Price value={line.linePriceWithTax} currencyCode={order.currencyCode} />
-            </div>
-          </div>
-        ))}
-      </div>
-
-      <Separator />
-
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">{t('subtotal')}</span>
-          <span>
-            <Price value={order.subTotalWithTax} currencyCode={order.currencyCode} />
-          </span>
-        </div>
-
-        {order.discounts && order.discounts.length > 0 && (
-          <>
-            {order.discounts.map((discount, index: number) => (
-              <div key={index} className="flex justify-between text-sm text-green-600">
-                <span>{discount.description}</span>
-                <span>
-                  <Price value={discount.amountWithTax} currencyCode={order.currencyCode} />
-                </span>
-              </div>
-            ))}
-          </>
-        )}
-
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">{t('shipping')}</span>
-          <span>
-            {order.shippingWithTax > 0
-              ? <Price value={order.shippingWithTax} currencyCode={order.currencyCode} />
-              : t('toBeCalculated')}
-          </span>
-        </div>
-      </div>
-
-      <Separator />
-
-      <div className="flex justify-between font-bold text-lg">
-        <span>{t('total')}</span>
-        <span>
-          <Price value={order.totalWithTax} currencyCode={order.currencyCode} />
-        </span>
-      </div>
-    </div>
-  );
-}
-
 export default function OrderSummary() {
-  const t = useTranslations('Checkout');
-  const { order } = useCheckout();
-  const [isOpen, setIsOpen] = useState(false);
+    const t = useTranslations('Checkout');
+    const {order} = useCheckout();
 
-  return (
-    <>
-      {/* Mobile: Collapsible summary */}
-      <div className="lg:hidden">
-        <Card>
-          <Collapsible open={isOpen} onOpenChange={setIsOpen}>
-            <CollapsibleTrigger className="w-full">
-              <CardHeader className="cursor-pointer">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <ShoppingBag className="h-5 w-5" />
-                    {t('orderSummary')} ({order.lines.length} {order.lines.length === 1 ? t('item') : t('items')})
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg">
-                      <Price value={order.totalWithTax} currencyCode={order.currencyCode} />
+    return (
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden lg:sticky lg:top-[94px]">
+            {/* Header */}
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
+                <ShoppingBag className="h-4 w-4 text-orange-500" aria-hidden="true" />
+                <h2 className="font-bold text-slate-800 text-sm">
+                    {t('orderSummary')}
+                    <span className="ml-1.5 text-xs font-normal text-slate-400">
+                        ({order.totalQuantity} {order.totalQuantity === 1 ? 'item' : 'items'})
                     </span>
-                    <ChevronDown className={`h-5 w-5 text-muted-foreground transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
-                  </div>
-                </div>
-              </CardHeader>
-            </CollapsibleTrigger>
-            <CollapsibleContent>
-              <CardContent>
-                <OrderSummaryContent order={order} t={t} />
-              </CardContent>
-            </CollapsibleContent>
-          </Collapsible>
-        </Card>
-      </div>
+                </h2>
+            </div>
 
-      {/* Desktop: Always visible sticky summary */}
-      <div className="hidden lg:block">
-        <Card className="sticky top-24">
-          <CardHeader>
-            <CardTitle>{t('orderSummary')}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <OrderSummaryContent order={order} t={t} />
-          </CardContent>
-        </Card>
-      </div>
-    </>
-  );
+            {/* Line items */}
+            <div className="divide-y divide-slate-50 max-h-[280px] overflow-y-auto">
+                {order.lines.map((line) => (
+                    <div key={line.id} className="flex items-center gap-3 px-5 py-3">
+                        {/* Thumbnail */}
+                        <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+                            {line.featuredAsset?.preview ? (
+                                <Image
+                                    src={line.featuredAsset.preview}
+                                    alt={line.productVariant.name}
+                                    fill
+                                    className="object-cover"
+                                    sizes="48px"
+                                />
+                            ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                    <ShoppingBag className="h-5 w-5 text-slate-300" aria-hidden="true" />
+                                </div>
+                            )}
+                            {/* Quantity badge */}
+                            <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] flex items-center justify-center bg-orange-500 text-white text-[10px] font-bold rounded-full border-2 border-white px-0.5">
+                                {line.quantity}
+                            </span>
+                        </div>
+
+                        {/* Name + variant */}
+                        <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-slate-700 line-clamp-1">
+                                {line.productVariant.product?.name ?? line.productVariant.name}
+                            </p>
+                            {line.productVariant.name !==
+                                (line.productVariant.product?.name ?? line.productVariant.name) && (
+                                <p className="text-[11px] text-slate-400 mt-0.5 line-clamp-1">
+                                    {line.productVariant.name}
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Price */}
+                        <p className="text-xs font-bold text-slate-700 shrink-0">
+                            <Price value={line.linePriceWithTax} currencyCode={order.currencyCode} />
+                        </p>
+                    </div>
+                ))}
+            </div>
+
+            {/* Totals */}
+            <div className="px-5 py-4 border-t border-slate-100 space-y-2.5">
+                <div className="flex justify-between text-sm">
+                    <span className="text-slate-500">{t('subtotal')}</span>
+                    <span className="font-medium text-slate-700">
+                        <Price value={order.subTotalWithTax} currencyCode={order.currencyCode} />
+                    </span>
+                </div>
+
+                {order.discounts?.map((discount, i) => (
+                    <div key={i} className="flex justify-between text-sm">
+                        <span className="flex items-center gap-1 text-emerald-600">
+                            <Tag className="h-3 w-3" aria-hidden="true" />
+                            {discount.description}
+                        </span>
+                        <span className="font-medium text-emerald-600">
+                            −<Price value={Math.abs(discount.amountWithTax)} currencyCode={order.currencyCode} />
+                        </span>
+                    </div>
+                ))}
+
+                {order.shippingLines && order.shippingLines.length > 0 && (
+                    <div className="flex justify-between text-sm">
+                        <span className="text-slate-500">{t('shipping')}</span>
+                        <span className="font-medium text-slate-700">
+                            {order.shippingWithTax === 0
+                                ? <span className="text-emerald-600 font-semibold">{t('free')}</span>
+                                : <Price value={order.shippingWithTax} currencyCode={order.currencyCode} />}
+                        </span>
+                    </div>
+                )}
+
+                <div className="flex justify-between items-baseline pt-3 border-t border-slate-100">
+                    <span className="font-bold text-slate-800">{t('total')}</span>
+                    <span className="text-xl font-black text-orange-500">
+                        <Price value={order.totalWithTax} currencyCode={order.currencyCode} />
+                    </span>
+                </div>
+            </div>
+        </div>
+    );
 }
