@@ -52,9 +52,8 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
         province: existingAddress?.province || '',
         postalCode: existingAddress?.postalCode || '',
         /*
-         * shippingAddress.country is a name string (e.g. "Kenya"), not a code.
-         * Resolve back to code by matching against the available countries list —
-         * same pattern as the original shipping-address-step.
+         * shippingAddress.country is a name string ("Kenya"), not a code.
+         * Resolve to code by matching against the countries list.
          */
         countryCode:
             countries.find((c) => c.name === existingAddress?.country)?.code ||
@@ -71,21 +70,24 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
             if (!useNewAddress && selectedAddressId) {
                 const addr = addresses.find((a) => a.id === selectedAddressId);
                 if (addr) {
-                    await setShippingAddress({
-                        fullName:
-                            addr.fullName?.trim() ||
-                            `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim(),
-                        streetLine1: addr.streetLine1 ?? '',
-                        streetLine2: addr.streetLine2 || '',
-                        city: addr.city ?? '',
-                        province: addr.province || '',
-                        postalCode: addr.postalCode || '',
-                        countryCode: addr.country?.code ?? data.countryCode,
-                        phoneNumber: addr.phoneNumber || '',
-                    });
+                    await setShippingAddress(
+                        {
+                            fullName:
+                                addr.fullName?.trim() ||
+                                `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim(),
+                            streetLine1: addr.streetLine1 ?? '',
+                            streetLine2: addr.streetLine2 || '',
+                            city: addr.city ?? '',
+                            province: addr.province || '',
+                            postalCode: addr.postalCode || '',
+                            countryCode: addr.country?.code ?? data.countryCode,
+                            phoneNumber: addr.phoneNumber || '',
+                        },
+                        true, // useSameForBilling
+                    );
                 }
             } else {
-                await setShippingAddress(data);
+                await setShippingAddress(data, true); // useSameForBilling
             }
             router.refresh();
             onComplete();
