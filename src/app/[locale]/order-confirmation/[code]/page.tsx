@@ -10,7 +10,8 @@ import {getRouteLocale} from '@/i18n/server';
 import {noIndexRobots} from '@/lib/metadata';
 import Image from 'next/image';
 
-/* ── generateMetadata — UNCHANGED ── */
+export const dynamic = 'force-dynamic';
+
 export async function generateMetadata(): Promise<Metadata> {
     const locale = await getRouteLocale();
     const t = await getTranslations({locale, namespace: 'OrderConfirmation'});
@@ -27,7 +28,6 @@ export default async function OrderConfirmationPage({
     const locale = await getRouteLocale();
     const t = await getTranslations({locale, namespace: 'OrderConfirmation'});
 
-    /* ── Data fetching — UNCHANGED ── */
     const result = await query(
         GetOrderDetailQuery,
         {code},
@@ -41,7 +41,6 @@ export default async function OrderConfirmationPage({
         <div className="min-h-screen bg-slate-50 py-8 md:py-14">
             <div className="max-w-2xl mx-auto px-4 sm:px-6">
 
-                {/* ── Success hero ── */}
                 <div className="text-center mb-8">
                     <div className="flex items-center justify-center mb-4">
                         <div className="relative flex items-center justify-center w-20 h-20 rounded-full bg-emerald-50">
@@ -62,7 +61,6 @@ export default async function OrderConfirmationPage({
                     </div>
                 </div>
 
-                {/* ── Order items card ── */}
                 <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-4">
                     <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
                         <ShoppingBag className="h-4 w-4 text-orange-500" aria-hidden="true" />
@@ -119,15 +117,11 @@ export default async function OrderConfirmationPage({
                         })}
                     </div>
 
-                    {/* Totals */}
                     <div className="px-5 py-4 border-t border-slate-100 space-y-2">
                         <div className="flex justify-between text-sm">
                             <span className="text-slate-500">{t('subtotal')}</span>
                             <span className="font-medium">
-                                <Price
-                                    value={order.subTotalWithTax}
-                                    currencyCode={order.currencyCode}
-                                />
+                                <Price value={order.subTotalWithTax} currencyCode={order.currencyCode} />
                             </span>
                         </div>
                         <div className="flex justify-between text-sm">
@@ -136,26 +130,19 @@ export default async function OrderConfirmationPage({
                                 {order.shippingWithTax === 0 ? (
                                     <span className="text-emerald-600 font-semibold">{t('free')}</span>
                                 ) : (
-                                    <Price
-                                        value={order.shippingWithTax}
-                                        currencyCode={order.currencyCode}
-                                    />
+                                    <Price value={order.shippingWithTax} currencyCode={order.currencyCode} />
                                 )}
                             </span>
                         </div>
                         <div className="flex justify-between items-baseline pt-2 border-t border-slate-100">
                             <span className="font-bold text-slate-800">{t('total')}</span>
                             <span className="text-xl font-black text-orange-500">
-                                <Price
-                                    value={order.totalWithTax}
-                                    currencyCode={order.currencyCode}
-                                />
+                                <Price value={order.totalWithTax} currencyCode={order.currencyCode} />
                             </span>
                         </div>
                     </div>
                 </div>
 
-                {/* ── Shipping address card ── */}
                 {order.shippingAddress && (
                     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden mb-6">
                         <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-100">
@@ -170,12 +157,8 @@ export default async function OrderConfirmationPage({
                             )}
                             <p>
                                 {order.shippingAddress.city}
-                                {order.shippingAddress.province
-                                    ? `, ${order.shippingAddress.province}`
-                                    : ''}
-                                {order.shippingAddress.postalCode
-                                    ? ` ${order.shippingAddress.postalCode}`
-                                    : ''}
+                                {order.shippingAddress.province ? `, ${order.shippingAddress.province}` : ''}
+                                {order.shippingAddress.postalCode ? ` ${order.shippingAddress.postalCode}` : ''}
                             </p>
                             <p>{order.shippingAddress.country}</p>
                             {order.shippingAddress.phoneNumber && (
@@ -185,7 +168,6 @@ export default async function OrderConfirmationPage({
                     </div>
                 )}
 
-                {/* ── CTAs ── */}
                 <div className="flex flex-col sm:flex-row gap-3">
                     <Link
                         href="/account/orders"
