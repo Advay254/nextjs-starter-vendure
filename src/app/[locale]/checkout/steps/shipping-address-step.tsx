@@ -51,10 +51,6 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
         city: existingAddress?.city || '',
         province: existingAddress?.province || '',
         postalCode: existingAddress?.postalCode || '',
-        /*
-         * shippingAddress.country is a name string ("Kenya"), not a code.
-         * Resolve to code by matching against the countries list.
-         */
         countryCode:
             countries.find((c) => c.name === existingAddress?.country)?.code ||
             countries[0]?.code ||
@@ -87,7 +83,25 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                     );
                 }
             } else {
-                await setShippingAddress(data, true); // useSameForBilling
+                /*
+                 * Normalize optional fields to empty strings —
+                 * AddressInput requires province, postalCode, phoneNumber
+                 * as non-optional string, but the form allows them to be
+                 * left blank.
+                 */
+                await setShippingAddress(
+                    {
+                        fullName: data.fullName,
+                        streetLine1: data.streetLine1,
+                        streetLine2: data.streetLine2 || '',
+                        city: data.city,
+                        province: data.province || '',
+                        postalCode: data.postalCode || '',
+                        countryCode: data.countryCode,
+                        phoneNumber: data.phoneNumber || '',
+                    },
+                    true, // useSameForBilling
+                );
             }
             router.refresh();
             onComplete();
