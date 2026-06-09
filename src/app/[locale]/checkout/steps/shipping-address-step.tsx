@@ -6,7 +6,7 @@ import {Input} from '@/components/ui/input';
 import {Field, FieldLabel, FieldError, FieldGroup} from '@/components/ui/field';
 import {RadioGroup, RadioGroupItem} from '@/components/ui/radio-group';
 import {Label} from '@/components/ui/label';
-import {Select} from '@/components/ui/select';
+import {CountrySelect} from '@/components/shared/country-select';
 import {Loader2, MapPin, Plus} from 'lucide-react';
 import {useRouter} from '@/i18n/navigation';
 import {useCheckout} from '../checkout-provider';
@@ -34,14 +34,16 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
     const router = useRouter();
     const {addresses, countries, order} = useCheckout();
 
-    /* ── All state/logic — UNCHANGED ── */
     const [useNewAddress, setUseNewAddress] = useState(addresses.length === 0);
     const [selectedAddressId, setSelectedAddressId] = useState<string | null>(
-        addresses.length > 0 ? (addresses.find((a) => a.defaultShippingAddress)?.id ?? addresses[0]?.id ?? null) : null,
+        addresses.length > 0
+            ? (addresses.find((a) => a.defaultShippingAddress)?.id ?? addresses[0]?.id ?? null)
+            : null,
     );
     const [submitting, setSubmitting] = useState(false);
 
     const existingAddress = order.shippingAddress;
+
     const defaultValues: Partial<ShippingFormData> = {
         fullName: existingAddress?.fullName || '',
         streetLine1: existingAddress?.streetLine1 || '',
@@ -49,7 +51,15 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
         city: existingAddress?.city || '',
         province: existingAddress?.province || '',
         postalCode: existingAddress?.postalCode || '',
-        countryCode: existingAddress?.countryCode || countries[0]?.code || '',
+        /*
+         * shippingAddress.country is a name string (e.g. "Kenya"), not a code.
+         * Resolve back to code by matching against the available countries list —
+         * same pattern as the original shipping-address-step.
+         */
+        countryCode:
+            countries.find((c) => c.name === existingAddress?.country)?.code ||
+            countries[0]?.code ||
+            '',
         phoneNumber: existingAddress?.phoneNumber || '',
     };
 
@@ -62,14 +72,15 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                 const addr = addresses.find((a) => a.id === selectedAddressId);
                 if (addr) {
                     await setShippingAddress({
-                        fullName: `${addr.fullName || ''}`.trim() ||
+                        fullName:
+                            addr.fullName?.trim() ||
                             `${order.customer?.firstName || ''} ${order.customer?.lastName || ''}`.trim(),
-                        streetLine1: addr.streetLine1,
+                        streetLine1: addr.streetLine1 ?? '',
                         streetLine2: addr.streetLine2 || '',
-                        city: addr.city,
+                        city: addr.city ?? '',
                         province: addr.province || '',
                         postalCode: addr.postalCode || '',
-                        countryCode: addr.country?.code || data.countryCode,
+                        countryCode: addr.country?.code ?? data.countryCode,
                         phoneNumber: addr.phoneNumber || '',
                     });
                 }
@@ -114,19 +125,27 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                                         ? 'border-orange-500 bg-orange-50'
                                         : 'border-slate-200 bg-white hover:border-orange-200',
                                 )}>
-                                    <RadioGroupItem value={addr.id} id={addr.id} className="mt-0.5 text-orange-500" />
+                                    <RadioGroupItem
+                                        value={addr.id}
+                                        id={addr.id}
+                                        className="mt-0.5 text-orange-500"
+                                    />
                                     <div className="flex items-start gap-2 flex-1">
                                         <MapPin className={cn(
                                             'h-4 w-4 mt-0.5 shrink-0',
                                             !useNewAddress && selectedAddressId === addr.id
-                                                ? 'text-orange-500' : 'text-slate-400',
+                                                ? 'text-orange-500'
+                                                : 'text-slate-400',
                                         )} aria-hidden="true" />
                                         <div className="text-sm">
                                             <p className="font-semibold text-slate-700">{addr.fullName}</p>
                                             <p className="text-slate-500">{addr.streetLine1}</p>
-                                            {addr.streetLine2 && <p className="text-slate-500">{addr.streetLine2}</p>}
+                                            {addr.streetLine2 && (
+                                                <p className="text-slate-500">{addr.streetLine2}</p>
+                                            )}
                                             <p className="text-slate-500">
-                                                {addr.city}{addr.province ? `, ${addr.province}` : ''}{' '}
+                                                {addr.city}
+                                                {addr.province ? `, ${addr.province}` : ''}{' '}
                                                 {addr.postalCode}
                                             </p>
                                             <p className="text-slate-500">{addr.country?.name}</p>
@@ -151,7 +170,9 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             )}>
                                 <RadioGroupItem value="new" id="new" className="text-orange-500" />
                                 <Plus className="h-4 w-4 text-slate-400" aria-hidden="true" />
-                                <span className="text-sm font-semibold text-slate-700">{t('addNewAddress')}</span>
+                                <span className="text-sm font-semibold text-slate-700">
+                                    {t('addNewAddress')}
+                                </span>
                             </div>
                         </Label>
                     </RadioGroup>
@@ -250,17 +271,12 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                                 <FieldLabel htmlFor="countryCode" className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('country')}
                                 </FieldLabel>
-                                <Select
+                                <CountrySelect
                                     id="countryCode"
                                     className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
+                                    countries={countries}
                                     {...register('countryCode', {required: t('countryRequired')})}
-                                >
-                                    {countries.map((country) => (
-                                        <option key={country.code} value={country.code}>
-                                            {country.name}
-                                        </option>
-                                    ))}
-                                </Select>
+                                />
                                 <FieldError>{errors.countryCode?.message}</FieldError>
                             </Field>
                         </div>
