@@ -1,7 +1,7 @@
 'use client';
 
 import {useState} from 'react';
-import {useForm} from 'react-hook-form';
+import {useForm, Controller} from 'react-hook-form';
 import {Input} from '@/components/ui/input';
 import {Field, FieldLabel, FieldError, FieldGroup} from '@/components/ui/field';
 import {RadioGroup, RadioGroupItem} from '@/components/ui/radio-group';
@@ -44,21 +44,21 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
 
     const existingAddress = order.shippingAddress;
 
-    const defaultValues: Partial<ShippingFormData> = {
-        fullName: existingAddress?.fullName || '',
-        streetLine1: existingAddress?.streetLine1 || '',
-        streetLine2: existingAddress?.streetLine2 || '',
-        city: existingAddress?.city || '',
-        province: existingAddress?.province || '',
-        postalCode: existingAddress?.postalCode || '',
-        countryCode:
-            countries.find((c) => c.name === existingAddress?.country)?.code ||
-            countries[0]?.code ||
-            '',
-        phoneNumber: existingAddress?.phoneNumber || '',
-    };
-
-    const {register, handleSubmit, formState: {errors}} = useForm<ShippingFormData>({defaultValues});
+    const {register, handleSubmit, control, formState: {errors}} = useForm<ShippingFormData>({
+        defaultValues: {
+            fullName: existingAddress?.fullName || '',
+            streetLine1: existingAddress?.streetLine1 || '',
+            streetLine2: existingAddress?.streetLine2 || '',
+            city: existingAddress?.city || '',
+            province: existingAddress?.province || '',
+            postalCode: existingAddress?.postalCode || '',
+            countryCode:
+                countries.find((c) => c.name === existingAddress?.country)?.code ||
+                countries[0]?.code ||
+                '',
+            phoneNumber: existingAddress?.phoneNumber || '',
+        },
+    });
 
     const onSubmit = async (data: ShippingFormData) => {
         setSubmitting(true);
@@ -79,16 +79,10 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             countryCode: addr.country?.code ?? data.countryCode,
                             phoneNumber: addr.phoneNumber || '',
                         },
-                        true, // useSameForBilling
+                        true,
                     );
                 }
             } else {
-                /*
-                 * Normalize optional fields to empty strings —
-                 * AddressInput requires province, postalCode, phoneNumber
-                 * as non-optional string, but the form allows them to be
-                 * left blank.
-                 */
                 await setShippingAddress(
                     {
                         fullName: data.fullName,
@@ -100,7 +94,7 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                         countryCode: data.countryCode,
                         phoneNumber: data.phoneNumber || '',
                     },
-                    true, // useSameForBilling
+                    true,
                 );
             }
             router.refresh();
@@ -150,19 +144,14 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                                         <MapPin className={cn(
                                             'h-4 w-4 mt-0.5 shrink-0',
                                             !useNewAddress && selectedAddressId === addr.id
-                                                ? 'text-orange-500'
-                                                : 'text-slate-400',
+                                                ? 'text-orange-500' : 'text-slate-400',
                                         )} aria-hidden="true" />
                                         <div className="text-sm">
                                             <p className="font-semibold text-slate-700">{addr.fullName}</p>
                                             <p className="text-slate-500">{addr.streetLine1}</p>
-                                            {addr.streetLine2 && (
-                                                <p className="text-slate-500">{addr.streetLine2}</p>
-                                            )}
+                                            {addr.streetLine2 && <p className="text-slate-500">{addr.streetLine2}</p>}
                                             <p className="text-slate-500">
-                                                {addr.city}
-                                                {addr.province ? `, ${addr.province}` : ''}{' '}
-                                                {addr.postalCode}
+                                                {addr.city}{addr.province ? `, ${addr.province}` : ''}{' '}{addr.postalCode}
                                             </p>
                                             <p className="text-slate-500">{addr.country?.name}</p>
                                         </div>
@@ -176,7 +165,6 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             </Label>
                         ))}
 
-                        {/* New address option */}
                         <Label htmlFor="new" className="cursor-pointer block">
                             <div className={cn(
                                 'flex items-center gap-3 rounded-xl border-2 px-4 py-3.5 transition-all duration-150',
@@ -186,9 +174,7 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             )}>
                                 <RadioGroupItem value="new" id="new" className="text-orange-500" />
                                 <Plus className="h-4 w-4 text-slate-400" aria-hidden="true" />
-                                <span className="text-sm font-semibold text-slate-700">
-                                    {t('addNewAddress')}
-                                </span>
+                                <span className="text-sm font-semibold text-slate-700">{t('addNewAddress')}</span>
                             </div>
                         </Label>
                     </RadioGroup>
@@ -201,11 +187,10 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                     <FieldGroup>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Field className="sm:col-span-2">
-                                <FieldLabel htmlFor="fullName" className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                <FieldLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('fullName')}
                                 </FieldLabel>
                                 <Input
-                                    id="fullName"
                                     className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
                                     {...register('fullName', {required: t('fullNameRequired')})}
                                 />
@@ -213,11 +198,10 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             </Field>
 
                             <Field className="sm:col-span-2">
-                                <FieldLabel htmlFor="streetLine1" className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                <FieldLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('streetAddress')}
                                 </FieldLabel>
                                 <Input
-                                    id="streetLine1"
                                     placeholder={t('streetAddressPlaceholder')}
                                     className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
                                     {...register('streetLine1', {required: t('streetAddressRequired')})}
@@ -226,11 +210,10 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             </Field>
 
                             <Field className="sm:col-span-2">
-                                <FieldLabel htmlFor="streetLine2" className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                <FieldLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('apartment')}
                                 </FieldLabel>
                                 <Input
-                                    id="streetLine2"
                                     placeholder={t('apartmentPlaceholder')}
                                     className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
                                     {...register('streetLine2')}
@@ -238,11 +221,10 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             </Field>
 
                             <Field>
-                                <FieldLabel htmlFor="city" className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                <FieldLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('city')}
                                 </FieldLabel>
                                 <Input
-                                    id="city"
                                     className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
                                     {...register('city', {required: t('cityRequired')})}
                                 />
@@ -250,33 +232,30 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             </Field>
 
                             <Field>
-                                <FieldLabel htmlFor="province" className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                <FieldLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('province')}
                                 </FieldLabel>
                                 <Input
-                                    id="province"
                                     className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
                                     {...register('province')}
                                 />
                             </Field>
 
                             <Field>
-                                <FieldLabel htmlFor="postalCode" className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                <FieldLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('postalCode')}
                                 </FieldLabel>
                                 <Input
-                                    id="postalCode"
                                     className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
                                     {...register('postalCode')}
                                 />
                             </Field>
 
                             <Field>
-                                <FieldLabel htmlFor="phoneNumber" className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                <FieldLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('phoneNumber')}
                                 </FieldLabel>
                                 <Input
-                                    id="phoneNumber"
                                     type="tel"
                                     className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
                                     {...register('phoneNumber')}
@@ -284,14 +263,24 @@ export default function ShippingAddressStep({onComplete}: ShippingAddressStepPro
                             </Field>
 
                             <Field className="sm:col-span-2">
-                                <FieldLabel htmlFor="countryCode" className="text-xs font-bold uppercase tracking-wide text-slate-600">
+                                <FieldLabel className="text-xs font-bold uppercase tracking-wide text-slate-600">
                                     {t('country')}
                                 </FieldLabel>
-                                <CountrySelect
-                                    id="countryCode"
-                                    className="rounded-xl border-slate-200 focus-visible:ring-orange-400"
-                                    countries={countries}
-                                    {...register('countryCode', {required: t('countryRequired')})}
+                                {/*
+                                 * CountrySelect is a Popover combobox — it takes value + onValueChange,
+                                 * not register()'s ref/onChange. Must use Controller.
+                                 */}
+                                <Controller
+                                    control={control}
+                                    name="countryCode"
+                                    rules={{required: t('countryRequired')}}
+                                    render={({field}) => (
+                                        <CountrySelect
+                                            countries={countries}
+                                            value={field.value}
+                                            onValueChange={field.onChange}
+                                        />
+                                    )}
                                 />
                                 <FieldError>{errors.countryCode?.message}</FieldError>
                             </Field>
